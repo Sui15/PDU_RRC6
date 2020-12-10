@@ -6,6 +6,8 @@
 
 #define NUM_OF_CHANNELS 14
 
+#define CH_RST 1000 //Channel reset time 
+
 #define TC_IGN_COILS 350  
 #define TC_FAN_L     350     
 #define TC_FAN_R     350     
@@ -79,33 +81,19 @@
 
 #define PCB_CAN_ID 0x100  // ID PDU-a za CAN bus - PORUKE!
 
-////////////////////////////////CAN PORUKE/////////////(CM-CAN massage)
 
-CAN.sendMsgBuf(PCB_CAN_ID, 0, 1, buf);
+#define IGN_COILS_MAX_ERR       6
+#define TC_FAN_L_MAX_ERR        6  
+#define TC_FAN_R_MAX_ERR        6  
+#define TC_WPUMP_L_MAX_ERR      6  
+#define TC_WPUMP_R_MAX_ERR      6   
+#define TC_BRAKEL_MAX_ERR       6   
+#define TC_SDCIRCUIT_MAX_ERR    6   
+#define TC_FPUMP_MAX_ERR        6   
+#define TC_ECU_MAX_ERR          6 
+#define TC_INJECT_MAX_ERR       6
+#define TC_AUX_MAX_ERR          6  
+#define TC_SHIFT_P_MAX_ERR      6  
+#define TC_SHIFT_N_MAX_ERR      6
+#define TC_CLUTCH_MAX_ERR       6
 
-
-//|_|_|_|_|_|_|_|_|
-
-//|_|_|_|_|_|_|IGN_COILS|OFF|
-
-
-can_ign_coil_control(on);
-uint8_t buf[8]={0}; 
-
-/*SLANJE*/
-
-void can_channel_control (uint8_t channel_num, uint8_t val)
-{
-  buf[1]=channel_num;
-  buf[0]=val;
-  CAN.sendMsgBuf(PCB_CAN_ID, 0, 2, buf);
-}
-/*END OF SLANJE*/
-
-/*PRIMANJE*/
-
-void control_channel(uint8_t *buf)
-{
-   digitalWrite(buf[1], buf[0]);         
-}
-/*END OF PRIMANJE*/

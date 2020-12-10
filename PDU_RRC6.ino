@@ -1,12 +1,20 @@
+/*
+    Savjeti za daljnji razvoj: typedef struct, typedef enum,
+    pass pointer to function
+*/
 /*********************************INCLUDOVI************************************/
 #include "PDU_RRC6.h"
 
+/***************************FORWARD DECLARATIONS*******************************/
+void can_channel_control (uint8_t channel_num, uint8_t val);
+void control_channel(uint8_t *buf);
+
 /**********************************TIMERS**************************************/
-#define CH_RST 1000 //Channel reset time 
+
 
 
 /*********************************COUNTERS*************************************/
-uint8_t IGN_COILS_counter;
+uint8_t IGN_COILS_counter;  //ign_coils_counter ili ignCoilsCounter _err_counter
 uint8_t FAN_L_counter;          
 uint8_t FAN_R_counter;          
 uint8_t WPUMP_L_counter;        
@@ -20,23 +28,6 @@ uint8_t AUX_counter;
 uint8_t SHIFT_P_counter;        
 uint8_t SHIFT_N_counter;    
 uint8_t CLUTCH_counter;    
-
-
-#define IGN_COILS_MAX_ERR       6
-#define TC_FAN_L_MAX_ERR        6  
-#define TC_FAN_R_MAX_ERR        6  
-#define TC_WPUMP_L_MAX_ERR      6  
-#define TC_WPUMP_R_MAX_ERR      6   
-#define TC_BRAKEL_MAX_ERR       6   
-#define TC_SDCIRCUIT_MAX_ERR    6   
-#define TC_FPUMP_MAX_ERR        6   
-#define TC_ECU_MAX_ERR          6 
-#define TC_INJECT_MAX_ERR       6
-#define TC_AUX_MAX_ERR          6  
-#define TC_SHIFT_P_MAX_ERR      6  
-#define TC_SHIFT_N_MAX_ERR      6
-#define TC_CLUTCH_MAX_ERR       6
-
 
 
 /**********************************CAN BUS*************************************/
@@ -119,7 +110,7 @@ void setup() {
     digitalWrite(O_WPUMP_L,    LOW);
     digitalWrite(O_WPUMP_R,    LOW); 
     digitalWrite(O_BRAKEL,     LOW);
-    digitalWrite(O_SHCIRCUIT, HIGH);
+    digitalWrite(O_SDCIRCUIT, HIGH);
     digitalWrite(O_FPUMP,      LOW);
     digitalWrite(O_ECU,        LOW);
     digitalWrite(O_INJECT,    HIGH);
@@ -137,12 +128,9 @@ void setup() {
 *******************************************************************************/
 void loop() 
 {
-
-
-
  //millis
 
- unsigned long currentMillis = millis();
+ uint32_t currentMillis = millis();
 
   
 // CAN BUS DATA READING CYCLE
@@ -151,40 +139,45 @@ unsigned char canId;
 unsigned char len = 0;           // 
 unsigned char buf[8];            // Buffer za poruke 8 bytova = 64bita max
 
-
+//uint32_t timer_millis = 0;        // VIDI ME
 
 //******************************************************************PRIMANJE PORUKA***
 if(CAN_MSGAVAIL == CAN.checkReceive()) // check if data coming
-    {  
-CAN.readMsgBuf(&len, buf);    // read data,  len: data length, buf: data buf
-canId = CAN.getCanId(); 
+{  
+    CAN.readMsgBuf(&len, buf);    // read data,  len: data length, buf: data buf
+    canId = CAN.getCanId(); 
 
-if(canId == 0x03 or canId == 0x02) //0x03 je CAN bus device ID za ECU, 0x02 je ID za DASH
-{
-  control_channel(buf);
-}}
+    if(canId == 0x03 or canId == 0x02) //0x03 je CAN bus device ID za ECU, 0x02 je ID za DASH
+    {
+    control_channel(buf);
+    }
+}
 
-//********************************************************************************************TRIP CURRENT REACHED///////////////
+//**********************************************************TRIP CURRENT REACHED///////////////
 
 ///////////////////////////////////////////////////////////IGNITION COILS////////////
-        
+
+/**
+ *  ISTRAZI SWITCH CASE 
+ *  implementiraj switch case kroz counter u if statementu
+ * */        
 if ((TC_IGN_COILS < S_IGN_COILS) AND (HIGH == O_IGN_COILS)) 
 {
-    O_IGN_COILS = LOW;      
+    digitalWrite (O_IGN_COILS, LOW);   // pazi sta radi ova linija, digitalWrite
     can_channel_control(IGN_COIL, LOW);
-    IGN_COILS_millis = millis();
-    IGN_COILS_counter += 1;
+    IGN_COILS_millis = millis();        //  VIDI ME GORE    - inicijaliziraj!!
+    IGN_COILS_counter += 1;             // preimenuj
 }
 
 if ((LOW == O_IGN_COILS) AND (CH_RST < (current_millis - IGN_COILS_millis)))
 {
-    O_IGN_COILS = HIGH;
+    O_IGN_COILS = HIGH;                 // greska, pazi liniju
     can_channel_control(IGN_COILS, HIGH);
 }
 
 if (IGN_COILS_MAX_ERR <= IGN_COILS_counter)
 {
-   O_SDCIRCUIT = LOW;
+   O_SDCIRCUIT = LOW;                   // opet greska
    can_channel_control(SDCIRCUIT, LOW);
    digitalWrite(O_SDCIRCUIT, LOW);
 }   
@@ -237,7 +230,7 @@ if (FAN_R_MAX_ERR <= FAN_R_counter)
          
 ///////////////////////////////////////////////////////////WATER PUMP LEFT////////////
 
-if ((TC_WPUMP_L < S_WPUMP_L) AND (HIGH == O_WPUMP_L)) 
+if ((TC_WPUMP_L < S_WPUMP_L) AND (HIGH == O_WPUMP_L))
 {
     O_WPUMP_L = LOW;      
     can_channel_control(IGN_COIL, LOW);
@@ -496,9 +489,27 @@ if (CLUTCH_MAX_ERR <= CLUTCH_counter)
 
 //DODATI NAKNADNO KAD SE SVE SLOŽI
 
-
-
-
-
-
 }
+
+/*******************************************************************************
+ *                               FUNCTIONS
+*******************************************************************************/
+
+/*SLANJE*/
+
+void can_channel_control (uint8_t channel_num, uint8_t val)
+{
+  buf[1]=channel_num;
+  buf[0]=val;
+  CAN.sendMsgBuf(PCB_CAN_ID, 0, 2, buf);
+}
+/*END OF SLANJE*/
+
+/*PRIMANJE*/
+
+void control_channel(uint8_t *buf)
+{
+   digitalWrite(buf[1], buf[0]);         
+}
+/*END OF PRIMANJE*/
+
