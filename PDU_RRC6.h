@@ -1,11 +1,25 @@
 /*include*/
-#include "Arduino.h"
 #include <mcp_can.h>
 #include <mcp_can_dfs.h>
 #include <SPI.h>
 
 
 #define NUM_OF_CHANNELS 14
+
+#define TC_IGN_COILS 350  
+#define TC_FAN_L     350     
+#define TC_FAN_R     350     
+#define TC_WPUMP_L   350     
+#define TC_WPUMP_R   350      
+#define TC_BRAKEL    350      
+#define TC_SDCIRCUIT 350      
+#define TC_FPUMP     350      
+#define TC_ECU       350    
+#define TC_INJECT    350  
+#define TC_AUX       350     
+#define TC_SHIFT_P   350     
+#define TC_SHIFT_N   350  
+#define TC_CLUTCH    350
 
 //////////////////////////////POWER MANAGEMENT CHANELL OUTPUTE ACTIVATION (O)
 ////////////////////////////////////////CHANELL/////ATMEGA_PIN
@@ -20,26 +34,11 @@
 #define O_ECU       45    //PL4          //14        //39
 #define O_INJECT    03    //PE5          //07        //07
 #define O_AUX        0    //PE0          //15        //02
-#define O_SHIFT_+   11    //PB5          //16        //24
-#define O_SHIFT_-    7    //PH4          //17        //16
+#define O_SHIFT_P   11    //PB5          //16        //24
+#define O_SHIFT_N    7    //PH4          //17        //16
 #define O_CLUTCH    46    //PL3          //20        //38
 
-uint8_t CHANN_D [NUM_OF_CHANNELS] = {
-    O_IGN_COILS,
-    O_FAN_L,    
-    O_FAN_R,    
-    O_WPUMP_L,  
-    O_WPUMP_R,  
-    O_BRAKEL,   
-    O_SDCIRCUIT,
-    O_FPUMP,    
-    O_ECU,      
-    O_INJECT,   
-    O_AUX,      
-    O_SHIFT_-,  
-    O_SHIFT_+,  
-    O_CLUTCH    
-}
+
 
 //////////////////////////////POWER MANAGEMENT CHANELL OUTPUTE DIAGNOSTIC ACTIVATION (D)
 ////////////////////////////////////////CHANELL/////ATMEGA_PIN/
@@ -54,26 +53,10 @@ uint8_t CHANN_D [NUM_OF_CHANNELS] = {
 #define D_ECU       34    //PC3           //14       //14        
 #define D_INJECT    28    //PA6           //07       //07        
 #define D_AUX       31    //PC6           //15       //15        
-#define D_SHIFT_+   37    //PC0           //16       //16        
-#define D_SHIFT_-   26    //PH0           //17       //17        
+#define D_SHIFT_P   37    //PC0           //16       //16        
+#define D_SHIFT_N   26    //PH0           //17       //17        
 #define D_CLUTCH    35    //PD1           //20       //20        
 
-uint8_t CHANN_D [NUM_OF_CHANNELS] = {
-    D_IGN_COILS,
-    D_FAN_L,    
-    D_FAN_R,    
-    D_WPUMP_L,  
-    D_WPUMP_R,  
-    D_BRAKEL,   
-    D_SDCIRCUIT,
-    D_FPUMP,    
-    D_ECU,      
-    D_INJECT,   
-    D_AUX,      
-    D_SHIFT_+,  
-    D_SHIFT_-,  
-    D_CLUTCH     
-}
 
 
 
@@ -90,27 +73,9 @@ uint8_t CHANN_D [NUM_OF_CHANNELS] = {
 #define S_ECU       11    //PK3           //14       //86        
 #define S_INJECT     4    //PF5           //07       //93        
 #define S_AUX        8    //PK0           //15       //89        
-#define S_SHIFT_+   14    //PK6           //16       //83        
-#define S_SHIFT_-    2    //PF2           //17       //95        
+#define S_SHIFT_P   14    //PK6           //16       //83        
+#define S_SHIFT_N    2    //PF2           //17       //95        
 #define S_CLUTCH    12    //PK4           //20       //85        
-
-uint8_t CHANN_S [NUM_OF_CHANNELS] = {
-    S_IGN_COILS
-    S_FAN_L,    
-    S_FAN_R,    
-    S_WPUMP_L,  
-    S_WPUMP_R,  
-    S_BRAKEL,   
-    S_SDCIRCUIT,
-    S_FPUMP,    
-    S_ECU,      
-    S_INJECT,   
-    S_AUX,      
-    S_SHIFT_+,  
-    S_SHIFT_-,  
-    S_CLUTCH     
-}
-
 
 #define PCB_CAN_ID 0x100  // ID PDU-a za CAN bus - PORUKE!
 

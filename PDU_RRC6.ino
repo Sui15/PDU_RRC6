@@ -1,32 +1,11 @@
-/************************************************************************************INCLUDOVI******************************************************************/
-#include "PDU_FW.h"
+/*********************************INCLUDOVI************************************/
+#include "PDU_RRC6.h"
 
-/************************************************************************************INICJALIZACIJA PINOVA I KONSTANTI******************************************/
-
-/*********************Trip current******Analog pin read const******Analog read pin pik******messured value******datasheet current*/
-#define TC_IGN_COILS 350  
-#define TC_FAN_L     350     
-#define TC_FAN_R     350     
-#define TC_WPUMP_L   350     
-#define TC_WPUMP_R   350      
-#define TC_BRAKEL    350      
-#define TC_SDCIRCUIT 350      
-#define TC_FPUMP     350      
-#define TC_ECU       350    
-#define TC_INJECT    350  
-#define TC_AUX       350     
-#define TC_SHIFT_+   350     
-#define TC_SHIFT_-   350  
-#define TC_CLUTCH    350
-
-
-
-/******************TIMERS*****************/
+/**********************************TIMERS**************************************/
 #define CH_RST 1000 //Channel reset time 
 
 
-
-/******************COUNTERS*****************/
+/*********************************COUNTERS*************************************/
 uint8_t IGN_COILS_counter;
 uint8_t FAN_L_counter;          
 uint8_t FAN_R_counter;          
@@ -38,8 +17,8 @@ uint8_t FPUMP_counter;
 uint8_t ECU_counter;           
 uint8_t INJECT_counter;      
 uint8_t AUX_counter;            
-uint8_t SHIFT_+_counter;        
-uint8_t SHIFT_-_counter;    
+uint8_t SHIFT_P_counter;        
+uint8_t SHIFT_N_counter;    
 uint8_t CLUTCH_counter;    
 
 
@@ -54,62 +33,108 @@ uint8_t CLUTCH_counter;
 #define TC_ECU_MAX_ERR          6 
 #define TC_INJECT_MAX_ERR       6
 #define TC_AUX_MAX_ERR          6  
-#define TC_SHIFT_+_MAX_ERR      6  
-#define TC_SHIFT_-_MAX_ERR      6
+#define TC_SHIFT_P_MAX_ERR      6  
+#define TC_SHIFT_N_MAX_ERR      6
 #define TC_CLUTCH_MAX_ERR       6
 
 
 
-/*********************//*CAN BUS*//
+/**********************************CAN BUS*************************************/
 unsigned long previousMillis = 0;
-
- //CAN
-#define SPI_CS_PIN 53    //chip select pin za CAN bus transceiver [SS]
+#define SPI_CS_PIN 53          //chip select pin za CAN bus transceiver [SS]
 
 
-////////////////////////////////////////////////////// INICJALIZACIJA VARIJABLI //////////////////////////////////////////////////////////////////
-
-//////////////////CANBUS ID
-
+/*********************************VARIABLES************************************/
 
 MCP_CAN CAN(SPI_CS_PIN);               // Set CS pin
 
+uint8_t CHANN_D [NUM_OF_CHANNELS] = {
+    O_IGN_COILS,
+    O_FAN_L,    
+    O_FAN_R,    
+    O_WPUMP_L,  
+    O_WPUMP_R,  
+    O_BRAKEL,   
+    O_SDCIRCUIT,
+    O_FPUMP,    
+    O_ECU,      
+    O_INJECT,   
+    O_AUX,      
+    O_SHIFT_N,  
+    O_SHIFT_P,  
+    O_CLUTCH    
+}
 
-/////////////////////////////////////////////////////////////////////////// MAIN /////////////////////////////////////////////////////////////////////////
+uint8_t CHANN_D [NUM_OF_CHANNELS] = {
+    D_IGN_COILS,
+    D_FAN_L,    
+    D_FAN_R,    
+    D_WPUMP_L,  
+    D_WPUMP_R,  
+    D_BRAKEL,   
+    D_SDCIRCUIT,
+    D_FPUMP,    
+    D_ECU,      
+    D_INJECT,   
+    D_AUX,      
+    D_SHIFT_P,  
+    D_SHIFT_N,  
+    D_CLUTCH     
+}
+
+uint8_t CHANN_S [NUM_OF_CHANNELS] = {
+    S_IGN_COILS
+    S_FAN_L,    
+    S_FAN_R,    
+    S_WPUMP_L,  
+    S_WPUMP_R,  
+    S_BRAKEL,   
+    S_SDCIRCUIT,
+    S_FPUMP,    
+    S_ECU,      
+    S_INJECT,   
+    S_AUX,      
+    S_SHIFT_P,  
+    S_SHIFT_N,  
+    S_CLUTCH     
+}
+/*******************************************************************************
+ *                                  SETUP
+*******************************************************************************/
 void setup() {
-  // put your setup code here, to run once:
+    for(int i = 0; i < NUM_OF_CHANNELS; i++)
+    {
+        pinMode(CHANN_O [i], OUTPUT);             
+        pinMode(CHANN_D [i], OUTPUT); 
+        pinMode(CHANN_S [i], INPUT);
+        
+        digitalWrite(CHANN_D [i], OUTPUT);
+        analogRead(CHANN_S [i], INPUT); 
+    }
 
-for(int i = 0; i < NUM_OF_CHANNELS; i++)
-{
-  pinMode(CHANN_O [i], OUTPUT);             
-  pinMode(CHANN_D [i], OUTPUT); 
-  pinMode(CHANN_S [i], INPUT);
-  
-  digitalWrite(CHANN_D [i], OUTPUT);
-  analogRead(CHANN_S [i], INPUT); 
+
+    digitalWrite(O_IGN_COILS, HIGH);
+    digitalWrite(O_FAN_L,      LOW);
+    digitalWrite(O_FAN_R,      LOW);
+    digitalWrite(O_WPUMP_L,    LOW);
+    digitalWrite(O_WPUMP_R,    LOW); 
+    digitalWrite(O_BRAKEL,     LOW);
+    digitalWrite(O_SHCIRCUIT, HIGH);
+    digitalWrite(O_FPUMP,      LOW);
+    digitalWrite(O_ECU,        LOW);
+    digitalWrite(O_INJECT,    HIGH);
+    digitalWrite(O_AUX,       HIGH);
+    digitalWrite(O_SHIFT_P,    LOW);
+    digitalWrite(O_SHIFT_N,    LOW);
+    digitalWrite(O_CLUTCH,    HIGH);
+
+
+    CAN.begin(CAN_500KBPS);
 }
 
-
-digitalWrite(O_IGN_COILS, HIGH);
-digitalWrite(O_FAN_L,      LOW);
-digitalWrite(O_FAN_R,      LOW);
-digitalWrite(O_WPUMP_L,    LOW);
-digitalWrite(O_WPUMP_R,    LOW); 
-digitalWrite(O_BRAKEL,     LOW);
-digitalWrite(O_SHCIRCUIT, HIGH);
-digitalWrite(O_FPUMP,      LOW);
-digitalWrite(O_ECU,        LOW);
-digitalWrite(O_INJECT,    HIGH);
-digitalWrite(O_AUX,       HIGH);
-digitalWrite(O_SHIFT_+,    LOW);
-digitalWrite(O_SHIFT_-,    LOW);
-digitalWrite(O_CLUTCH,    HIGH);
-
-
-/////CAN BUS
- CAN.begin(CAN_500KBPS);
-}
-
+/*******************************************************************************
+ *                                  LOOP
+*******************************************************************************/
 void loop() 
 {
 
@@ -398,21 +423,21 @@ if (AUX_MAX_ERR <= AUX_counter)
 
 ///////////////////////////////////////////////////////////SHIFT +////////////
 
-if ((TC_SHIFT_+ < S_SHIFT_+) AND (HIGH == O_SHIFT_+)) 
+if ((TC_SHIFT_P < S_SHIFT_+) AND (HIGH == O_SHIFT_P)) 
 {
-    O_SHIFT_+ = LOW;      
+    O_SHIFT_P = LOW;      
     can_channel_control(IGN_COIL, LOW);
     SHIFT_+_millis = millis();
-    SHIFT_+_counter += 1;
+    SHIFT_P_counter += 1;
 }
 
-if ((LOW == O_SHIFT_+) AND (CH_RST < (current_millis - SHIFT_+_millis)))
+if ((LOW == O_SHIFT_P) AND (CH_RST < (current_millis - SHIFT_+_millis)))
 {
-    O_SHIFT_+ = HIGH;
+    O_SHIFT_P = HIGH;
     can_channel_control(SHIFT_+, HIGH);
 }
 
-if (SHIFT_+_MAX_ERR <= SHIFT_+_counter)
+if (SHIFT_+_MAX_ERR <= SHIFT_P_counter)
 {
    O_SDCIRCUIT = LOW;
    can_channel_control(SDCIRCUIT, LOW);
@@ -421,21 +446,21 @@ if (SHIFT_+_MAX_ERR <= SHIFT_+_counter)
 
 ///////////////////////////////////////////////////////////SHIFT -////////////
 
-if ((TC_SHIFT_- < S_SHIFT_-) AND (HIGH == O_SHIFT_-)) 
+if ((TC_SHIFT_N < S_SHIFT_-) AND (HIGH == O_SHIFT_N)) 
 {
-    O_SHIFT_- = LOW;      
+    O_SHIFT_N = LOW;      
     can_channel_control(IGN_COIL, LOW);
     SHIFT_-_millis = millis();
-    SHIFT_-_counter += 1;
+    SHIFT_N_counter += 1;
 }
 
-if ((LOW == O_SHIFT_-) AND (CH_RST < (current_millis - SHIFT_-_millis)))
+if ((LOW == O_SHIFT_N) AND (CH_RST < (current_millis - SHIFT_-_millis)))
 {
-    O_SHIFT_- = HIGH;
+    O_SHIFT_N = HIGH;
     can_channel_control(SHIFT_-, HIGH);
 }
 
-if (SHIFT_-_MAX_ERR <= SHIFT_-_counter)
+if (SHIFT_-_MAX_ERR <= SHIFT_N_counter)
 {
    O_SDCIRCUIT = LOW;
    can_channel_control(SDCIRCUIT, LOW);
